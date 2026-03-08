@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Corpo em Progresso",
+    "slug": "corpo-em-progresso",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.valdirricardo.corpoemprogresso"
+    }
+  }
+}
