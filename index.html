@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Corpo em Progresso" />
+  <title>Corpo em Progresso</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Controle de peso e medidas</p>
+        <h1>Corpo em Progresso</h1>
+      </div>
+      <button id="installBtn" class="secondary-btn hidden">Instalar</button>
+    </header>
+
+    <section class="profile-switcher card">
+      <div>
+        <label for="profileSelect">Perfil ativo</label>
+        <select id="profileSelect"></select>
+      </div>
+      <button id="manageProfilesBtn" class="secondary-btn">Perfis</button>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="painel">Painel</button>
+      <button class="tab" data-tab="registro">Novo registro</button>
+      <button class="tab" data-tab="historico">Histórico</button>
+      <button class="tab" data-tab="fotos">Fotos</button>
+      <button class="tab" data-tab="backup">Backup</button>
+    </nav>
+
+    <main>
+      <section id="painel" class="tab-panel active">
+        <div class="stats-grid">
+          <article class="card stat-card">
+            <span>Peso atual</span>
+            <strong id="statPeso">--</strong>
+          </article>
+          <article class="card stat-card">
+            <span>Meta</span>
+            <strong id="statMeta">--</strong>
+          </article>
+          <article class="card stat-card">
+            <span>IMC</span>
+            <strong id="statImc">--</strong>
+          </article>
+          <article class="card stat-card">
+            <span>Variação</span>
+            <strong id="statVariacao">--</strong>
+          </article>
+        </div>
+
+        <div class="card summary-card">
+          <h2>Resumo rápido</h2>
+          <p id="summaryText">Nenhum registro ainda.</p>
+        </div>
+
+        <div class="chart-grid">
+          <article class="card chart-card">
+            <div class="chart-header">
+              <h2>Peso</h2>
+              <span id="pesoRange">Sem dados</span>
+            </div>
+            <canvas id="pesoChart" width="800" height="320"></canvas>
+          </article>
+          <article class="card chart-card">
+            <div class="chart-header">
+              <h2>Cintura</h2>
+              <span id="cinturaRange">Sem dados</span>
+            </div>
+            <canvas id="cinturaChart" width="800" height="320"></canvas>
+          </article>
+        </div>
+      </section>
+
+      <section id="registro" class="tab-panel">
+        <form id="entryForm" class="card form-card">
+          <h2>Novo registro</h2>
+          <div class="form-grid">
+            <label>Data
+              <input type="date" name="date" required />
+            </label>
+            <label>Peso (kg)
+              <input type="number" name="weight" step="0.1" min="0" required />
+            </label>
+            <label>Gordura corporal (%)
+              <input type="number" name="bodyFat" step="0.1" min="0" />
+            </label>
+            <label>Cintura (cm)
+              <input type="number" name="waist" step="0.1" min="0" />
+            </label>
+            <label>Quadril (cm)
+              <input type="number" name="hip" step="0.1" min="0" />
+            </label>
+            <label>Braço (cm)
+              <input type="number" name="arm" step="0.1" min="0" />
+            </label>
+            <label>Coxa (cm)
+              <input type="number" name="thigh" step="0.1" min="0" />
+            </label>
+            <label>Observações
+              <input type="text" name="notes" maxlength="140" placeholder="Como você se sentiu hoje?" />
+            </label>
+            <label class="full-width">Foto de evolução
+              <input type="file" name="photo" accept="image/*" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">Salvar registro</button>
+            <button type="reset" class="secondary-btn">Limpar</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="historico" class="tab-panel">
+        <article class="card">
+          <h2>Histórico</h2>
+          <div id="historyList" class="history-list empty-state">Nenhum registro encontrado.</div>
+        </article>
+      </section>
+
+      <section id="fotos" class="tab-panel">
+        <article class="card">
+          <div class="section-title">
+            <h2>Fotos de evolução</h2>
+            <button id="comparePhotosBtn" class="secondary-btn">Comparar 2 últimas</button>
+          </div>
+          <div id="photoGrid" class="photo-grid empty-state">Nenhuma foto adicionada.</div>
+        </article>
+        <article id="comparisonCard" class="card hidden">
+          <h2>Comparação</h2>
+          <div id="comparisonGrid" class="comparison-grid"></div>
+        </article>
+      </section>
+
+      <section id="backup" class="tab-panel">
+        <article class="card backup-card">
+          <h2>Backup</h2>
+          <p>Exporte seus dados para guardar uma cópia ou importe um arquivo salvo anteriormente.</p>
+          <div class="backup-actions">
+            <button id="exportBtn" class="primary-btn">Exportar backup</button>
+            <label class="secondary-btn file-btn">
+              Importar backup
+              <input id="importInput" type="file" accept="application/json" hidden />
+            </label>
+          </div>
+          <p class="backup-note">Cada iPhone guarda seus próprios dados localmente.</p>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="profilesDialog">
+    <form method="dialog" class="dialog-card">
+      <div class="section-title">
+        <h2>Perfis</h2>
+        <button class="icon-btn" value="cancel">✕</button>
+      </div>
+      <div id="profilesEditor"></div>
+      <button id="saveProfilesBtn" class="primary-btn" type="button">Salvar perfis</button>
+    </form>
+  </dialog>
+
+  <template id="historyItemTemplate">
+    <article class="history-item">
+      <div>
+        <h3 class="history-date"></h3>
+        <p class="history-measures"></p>
+        <p class="history-notes"></p>
+      </div>
+      <div class="history-actions">
+        <button class="secondary-btn small edit-entry">Editar</button>
+        <button class="danger-btn small delete-entry">Excluir</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
