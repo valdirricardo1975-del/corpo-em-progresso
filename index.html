@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Corpo em Progresso</title>
+  <meta name="theme-color" content="#22c55e" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="top">
+      <div>
+        <p class="eyebrow">Corpo em Progresso</p>
+        <h1>Seu painel de evolução</h1>
+      </div>
+      <div class="profile-switch">
+        <label for="perfilSelect">Perfil</label>
+        <select id="perfilSelect"></select>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero-card">
+        <div class="hero-main">
+          <p class="card-label">Peso atual</p>
+          <h2 id="pesoAtual">-- kg</h2>
+          <p id="pesoSubinfo" class="muted">Sem registros ainda</p>
+
+          <div class="progress-block">
+            <div class="progress-header">
+              <span>Progresso até a meta</span>
+              <strong id="progressoMetaTexto">--</strong>
+            </div>
+            <div class="progress-bar">
+              <div id="progressoMetaBar" class="progress-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="mini-card">
+            <p class="card-label">IMC</p>
+            <div class="mini-value" id="imcValor">--</div>
+            <div class="mini-note" id="imcClassificacao">--</div>
+          </div>
+
+          <div class="mini-card">
+            <p class="card-label">Meta</p>
+            <div class="mini-value" id="metaPeso">-- kg</div>
+            <div class="mini-note" id="faltamMeta">--</div>
+          </div>
+
+          <div class="mini-card">
+            <p class="card-label">Média 7 dias</p>
+            <div class="mini-value" id="media7dias">-- kg</div>
+            <div class="mini-note">Últimos registros</div>
+          </div>
+
+          <div class="mini-card">
+            <p class="card-label">Variação 30 dias</p>
+            <div class="mini-value" id="variacao30dias">-- kg</div>
+            <div class="mini-note">Comparação mensal</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Evolução</p>
+            <h3>Gráfico de peso</h3>
+          </div>
+        </div>
+        <canvas id="graficoPeso"></canvas>
+      </section>
+
+      <section class="grid-2">
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Registro diário</p>
+              <h3>Novo registro</h3>
+            </div>
+          </div>
+
+          <form id="registroForm" class="form-grid">
+            <div class="field">
+              <label for="dataInput">Data</label>
+              <input id="dataInput" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="pesoInput">Peso (kg)</label>
+              <input id="pesoInput" type="number" step="0.1" placeholder="84.3" />
+            </div>
+
+            <div class="field">
+              <label for="gorduraInput">Gordura corporal (%)</label>
+              <input id="gorduraInput" type="number" step="0.1" placeholder="22.4" />
+            </div>
+
+            <div class="field">
+              <label for="cinturaInput">Cintura (cm)</label>
+              <input id="cinturaInput" type="number" step="0.1" placeholder="92.5" />
+            </div>
+
+            <div class="field">
+              <label for="quadrilInput">Quadril (cm)</label>
+              <input id="quadrilInput" type="number" step="0.1" placeholder="101.0" />
+            </div>
+
+            <div class="field">
+              <label for="bracoInput">Braço (cm)</label>
+              <input id="bracoInput" type="number" step="0.1" placeholder="34.2" />
+            </div>
+
+            <div class="field">
+              <label for="coxaInput">Coxa (cm)</label>
+              <input id="coxaInput" type="number" step="0.1" placeholder="58.6" />
+            </div>
+
+            <div class="field full">
+              <label for="obsInput">Observações</label>
+              <textarea id="obsInput" rows="3" placeholder="Ex.: treino forte, retenção, viagem..."></textarea>
+            </div>
+
+            <div class="field full">
+              <label for="fotoInput">Foto de evolução</label>
+              <input id="fotoInput" type="file" accept="image/*" />
+            </div>
+
+            <button class="primary-btn full" type="submit">Salvar registro</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Perfil</p>
+              <h3>Dados do perfil</h3>
+            </div>
+          </div>
+
+          <form id="perfilForm" class="form-grid">
+            <div class="field full">
+              <label for="nomePerfilInput">Nome</label>
+              <input id="nomePerfilInput" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="alturaInput">Altura (m)</label>
+              <input id="alturaInput" type="number" step="0.01" placeholder="1.75" />
+            </div>
+
+            <div class="field">
+              <label for="metaInput">Meta de peso (kg)</label>
+              <input id="metaInput" type="number" step="0.1" placeholder="80.0" />
+            </div>
+
+            <button class="secondary-btn full" type="submit">Salvar perfil</button>
+          </form>
+        </section>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Fotos</p>
+            <h3>Antes e depois</h3>
+          </div>
+        </div>
+
+        <div class="photo-compare-controls">
+          <div class="field">
+            <label for="fotoAntesSelect">Antes</label>
+            <select id="fotoAntesSelect"></select>
+          </div>
+          <div class="field">
+            <label for="fotoDepoisSelect">Depois</label>
+            <select id="fotoDepoisSelect"></select>
+          </div>
+        </div>
+
+        <div class="photo-compare-grid">
+          <div class="photo-box">
+            <div class="photo-label">Antes</div>
+            <img id="fotoAntesPreview" alt="Foto antes" />
+          </div>
+          <div class="photo-box">
+            <div class="photo-label">Depois</div>
+            <img id="fotoDepoisPreview" alt="Foto depois" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Histórico</p>
+            <h3>Registros salvos</h3>
+          </div>
+        </div>
+
+        <div id="historicoLista" class="history-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Backup</p>
+            <h3>Exportar e importar</h3>
+          </div>
+        </div>
+
+        <div class="backup-actions">
+          <button id="exportarBtn" class="secondary-btn" type="button">Exportar backup</button>
+          <label class="secondary-btn file-btn">
+            Importar backup
+            <input id="importarInput" type="file" accept="application/json" hidden />
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <a href="#top">Início</a>
+      <a href="#graficoPeso">Gráfico</a>
+      <a href="#fotoAntesSelect">Fotos</a>
+      <a href="#perfilForm">Perfil</a>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
