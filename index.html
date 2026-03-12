@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corpo em Progresso</title>
+<meta name="theme-color" content="#22c55e">
+<link rel="manifest" href="manifest.webmanifest">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="hero">
+<img src="assets/balance.svg" class="hero-icon">
+<h1>Corpo em Progresso</h1>
+<p>Seu painel de evolução corporal</p>
+</header>
+
+<main class="container">
+
+<section class="card">
+<h2>Peso atual</h2>
+<div id="pesoAtual" class="valor">-- kg</div>
+<p id="pesoSubinfo">Sem registros</p>
+</section>
+
+<section class="stats">
+<div class="stat-card">
+<h3>IMC</h3>
+<div id="imc">--</div>
+<p id="imcClass"></p>
+</div>
+
+<div class="stat-card">
+<h3>Meta</h3>
+<div id="metaPeso">-- kg</div>
+</div>
+</section>
+
+<section class="card">
+<h2>Evolução</h2>
+<canvas id="graficoPeso"></canvas>
+</section>
+
+<section class="card">
+<h2>Novo registro</h2>
+
+<label>Peso (kg)</label>
+<input id="pesoInput" type="number" step="0.1">
+
+<label>Data</label>
+<input id="dataInput" type="date">
+
+<button onclick="salvarRegistro()">Salvar</button>
+
+</section>
+
+</main>
+
+<nav class="bottom-nav">
+<span>Início</span>
+<span>Progresso</span>
+<span>Fotos</span>
+<span>Perfil</span>
+</nav>
+
+<script src="app.js"></script>
+
+</body>
+</html>
