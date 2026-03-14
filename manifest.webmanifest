@@ -1,0 +1,8 @@
+{
+  "name":"Corpo em Progresso",
+  "short_name":"Corpo",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#ffffff",
+  "theme_color":"#16a34a"
+}
