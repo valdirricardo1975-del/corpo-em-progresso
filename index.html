@@ -2,14 +2,20 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Corpo em Progresso</title>
   <meta name="theme-color" content="#16a34a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Corpo" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="chart.umd.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,11 +26,10 @@
     <div class="hero-card">
       <div class="hero-text">
         <p class="eyebrow">Corpo em Progresso</p>
-        <h1>Acompanhe peso, medidas e evolução com clareza e elegância.</h1>
-        <p class="sub">Agora com medidas corporais restauradas, abas funcionais e perfis separados.</p>
+        <h1>Acompanhe peso, medidas e evolução com clareza.</h1>
+        <p class="sub">Sincronizado entre iPhone e iPad, com gráficos, tabelas e análise de tendência.</p>
       </div>
-
-      <svg class="hero-scale" viewBox="0 0 200 200" aria-label="Balança premium" role="img">
+      <svg class="hero-scale" viewBox="0 0 200 200" aria-label="Balança" role="img">
         <defs>
           <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
@@ -40,76 +45,106 @@
   </header>
 
   <main class="container">
+    <!-- ============ INÍCIO ============ -->
     <section id="tab-inicio" class="tab-page active">
       <section class="card main-card">
-        <div>
-          <div class="top-row">
-            <div>
-              <p class="eyebrow green">Peso atual</p>
-              <h2 id="pesoAtual">-- kg</h2>
-              <p id="pesoSubinfo" class="muted">Sem registros</p>
-            </div>
-            <div class="profile-pill">
-              <label for="perfilSelect">Perfil</label>
-              <select id="perfilSelect"></select>
-            </div>
+        <div class="top-row">
+          <div>
+            <p class="eyebrow green">Peso atual</p>
+            <h2 id="pesoAtual">-- kg</h2>
+            <p id="pesoSubinfo" class="muted">Sem registros</p>
           </div>
-
-          <div class="progress">
-            <div class="progress-top">
-              <span>Progresso até a meta</span>
-              <strong id="metaStatus">--</strong>
-            </div>
-            <div class="progress-bar">
-              <div id="progressFill"></div>
-            </div>
+          <div class="profile-pill">
+            <label for="perfilSelect">Perfil</label>
+            <select id="perfilSelect"></select>
           </div>
         </div>
+
+        <div class="progress">
+          <div class="progress-top">
+            <span>Progresso até a meta</span>
+            <strong id="metaStatus">--</strong>
+          </div>
+          <div class="progress-bar"><div id="progressFill"></div></div>
+        </div>
+
+        <div id="syncBadge" class="sync-badge muted">Sincronização desativada</div>
       </section>
 
       <section class="stats">
-        <div class="stat">
-          <p>IMC</p>
-          <h3 id="imc">--</h3>
-          <span id="imcClass" class="muted">--</span>
-        </div>
-
         <div class="stat">
           <p>Meta</p>
           <h3 id="metaPeso">-- kg</h3>
           <span id="metaFalta" class="muted">--</span>
         </div>
-
         <div class="stat">
           <p>Média 7 dias</p>
           <h3 id="media7">--</h3>
-          <span class="muted">Últimos registros</span>
+          <span id="media7Comp" class="muted">Últimos registros</span>
         </div>
-
         <div class="stat">
           <p>Variação 30 dias</p>
           <h3 id="var30">--</h3>
           <span class="muted">Comparação mensal</span>
         </div>
-      </section>
-
-      <section class="card">
-        <p class="eyebrow green">Resumo corporal</p>
-        <h3>Últimas medidas</h3>
-        <div class="measure-grid compact">
-          <div class="measure-box"><span>Gordura</span><strong id="ultimaGordura">-- %</strong></div>
-          <div class="measure-box"><span>Cintura</span><strong id="ultimaCintura">-- cm</strong></div>
-          <div class="measure-box"><span>Quadril</span><strong id="ultimoQuadril">-- cm</strong></div>
-          <div class="measure-box"><span>Braço</span><strong id="ultimoBraco">-- cm</strong></div>
-          <div class="measure-box"><span>Coxa</span><strong id="ultimaCoxa">-- cm</strong></div>
+        <div class="stat">
+          <p>Sequência</p>
+          <h3 id="streak">--</h3>
+          <span class="muted">Dias seguidos com registro</span>
+        </div>
+        <div class="stat">
+          <p>Tendência</p>
+          <h3 id="tendencia">--</h3>
+          <span class="muted">kg por semana (últ. 30 dias)</span>
+        </div>
+        <div class="stat">
+          <p>Previsão da meta</p>
+          <h3 id="previsaoMeta">--</h3>
+          <span class="muted">Mantendo o ritmo atual</span>
         </div>
       </section>
+
+      <div class="two-col">
+        <section class="card">
+          <p class="eyebrow green">Saúde</p>
+          <h3>IMC</h3>
+          <div class="gauge-wrap">
+            <canvas id="graficoIMC"></canvas>
+            <div class="gauge-center">
+              <strong id="imc">--</strong>
+              <span id="imcClass" class="muted">--</span>
+            </div>
+          </div>
+          <div class="gauge-legend muted">
+            <span><i class="dot d1"></i>Abaixo</span>
+            <span><i class="dot d2"></i>Normal</span>
+            <span><i class="dot d3"></i>Sobrepeso</span>
+            <span><i class="dot d4"></i>Obesidade</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <p class="eyebrow green">Resumo corporal</p>
+          <h3>Últimas medidas</h3>
+          <div class="measure-grid compact">
+            <div class="measure-box"><span>Gordura</span><strong id="ultimaGordura">-- %</strong></div>
+            <div class="measure-box"><span>Cintura</span><strong id="ultimaCintura">-- cm</strong></div>
+            <div class="measure-box"><span>Quadril</span><strong id="ultimoQuadril">-- cm</strong></div>
+            <div class="measure-box"><span>Braço</span><strong id="ultimoBraco">-- cm</strong></div>
+            <div class="measure-box"><span>Coxa</span><strong id="ultimaCoxa">-- cm</strong></div>
+            <div class="measure-box"><span>Peito</span><strong id="ultimoPeito">-- cm</strong></div>
+            <div class="measure-box"><span>Pescoço</span><strong id="ultimoPescoco">-- cm</strong></div>
+            <div class="measure-box"><span>Cintura/Quadril</span><strong id="ultimoRCQ">--</strong></div>
+          </div>
+        </section>
+      </div>
     </section>
 
+    <!-- ============ REGISTROS ============ -->
     <section id="tab-registros" class="tab-page">
       <section class="card">
         <p class="eyebrow green">Registro</p>
-        <h3>Novo registro</h3>
+        <h3 id="tituloRegistro">Novo registro</h3>
 
         <div class="form-grid">
           <div>
@@ -118,27 +153,35 @@
           </div>
           <div>
             <label for="pesoInput">Peso (kg)</label>
-            <input id="pesoInput" type="number" step="0.1" placeholder="84.3" />
+            <input id="pesoInput" type="number" inputmode="decimal" step="0.1" placeholder="84.3" />
           </div>
           <div>
             <label for="gorduraInput">Gordura corporal (%)</label>
-            <input id="gorduraInput" type="number" step="0.1" placeholder="21.8" />
+            <input id="gorduraInput" type="number" inputmode="decimal" step="0.1" placeholder="21.8" />
           </div>
           <div>
             <label for="cinturaInput">Cintura (cm)</label>
-            <input id="cinturaInput" type="number" step="0.1" placeholder="92.5" />
+            <input id="cinturaInput" type="number" inputmode="decimal" step="0.1" placeholder="92.5" />
           </div>
           <div>
             <label for="quadrilInput">Quadril (cm)</label>
-            <input id="quadrilInput" type="number" step="0.1" placeholder="100.0" />
+            <input id="quadrilInput" type="number" inputmode="decimal" step="0.1" placeholder="100.0" />
           </div>
           <div>
             <label for="bracoInput">Braço (cm)</label>
-            <input id="bracoInput" type="number" step="0.1" placeholder="34.0" />
+            <input id="bracoInput" type="number" inputmode="decimal" step="0.1" placeholder="34.0" />
           </div>
           <div>
             <label for="coxaInput">Coxa (cm)</label>
-            <input id="coxaInput" type="number" step="0.1" placeholder="58.0" />
+            <input id="coxaInput" type="number" inputmode="decimal" step="0.1" placeholder="58.0" />
+          </div>
+          <div>
+            <label for="peitoInput">Peito (cm)</label>
+            <input id="peitoInput" type="number" inputmode="decimal" step="0.1" placeholder="102.0" />
+          </div>
+          <div>
+            <label for="pescocoInput">Pescoço (cm)</label>
+            <input id="pescocoInput" type="number" inputmode="decimal" step="0.1" placeholder="38.0" />
           </div>
           <div class="full">
             <label for="obsInput">Observações</label>
@@ -150,51 +193,107 @@
       </section>
 
       <section class="card">
-        <p class="eyebrow green">Histórico</p>
-        <h3>Registros salvos</h3>
-        <div id="historicoLista" class="history-list"></div>
+        <div class="chart-header">
+          <div>
+            <p class="eyebrow green">Histórico</p>
+            <h3>Todos os registros</h3>
+          </div>
+          <span id="totalRegistros" class="muted"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="tabelaHistorico">
+            <thead>
+              <tr>
+                <th>Data</th><th>Peso</th><th>Δ</th><th>Gord.</th><th>Cintura</th>
+                <th>Quadril</th><th>Braço</th><th>Coxa</th><th>Peito</th><th>Pescoço</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </section>
     </section>
 
+    <!-- ============ GRÁFICOS ============ -->
     <section id="tab-graficos" class="tab-page">
-      <section class="card">
-        <p class="eyebrow green">Evolução</p>
-        <h3>Gráfico de peso</h3>
-        <canvas id="graficoPeso"></canvas>
-      </section>
-
       <section class="card">
         <div class="chart-header">
           <div>
-            <p class="eyebrow green">Medidas corporais</p>
-            <h3>Gráfico de medidas</h3>
+            <p class="eyebrow green">Evolução</p>
+            <h3>Peso, média móvel e meta</h3>
           </div>
-          <div class="selector-wrap">
-            <label for="medidaSelect">Medida</label>
-            <select id="medidaSelect">
-              <option value="gordura">Gordura corporal</option>
-              <option value="cintura">Cintura</option>
-              <option value="quadril">Quadril</option>
-              <option value="braco">Braço</option>
-              <option value="coxa">Coxa</option>
-            </select>
+          <div class="period-btns" id="periodoBtns">
+            <button data-dias="30">30d</button>
+            <button data-dias="90" class="active">90d</button>
+            <button data-dias="365">1a</button>
+            <button data-dias="0">Tudo</button>
           </div>
         </div>
-        <canvas id="graficoMedidas"></canvas>
+        <div class="chart-box"><canvas id="graficoPeso"></canvas></div>
+      </section>
+
+      <div class="two-col">
+        <section class="card">
+          <div class="chart-header">
+            <div>
+              <p class="eyebrow green">Medidas corporais</p>
+              <h3>Evolução das medidas</h3>
+            </div>
+            <div class="selector-wrap">
+              <label for="medidaSelect">Medida</label>
+              <select id="medidaSelect">
+                <option value="gordura">Gordura corporal</option>
+                <option value="cintura">Cintura</option>
+                <option value="quadril">Quadril</option>
+                <option value="braco">Braço</option>
+                <option value="coxa">Coxa</option>
+                <option value="peito">Peito</option>
+                <option value="pescoco">Pescoço</option>
+              </select>
+            </div>
+          </div>
+          <div class="chart-box"><canvas id="graficoMedidas"></canvas></div>
+        </section>
+
+        <section class="card">
+          <p class="eyebrow green">Saúde</p>
+          <h3>Relação cintura/quadril</h3>
+          <div class="chart-box"><canvas id="graficoRCQ"></canvas></div>
+          <p class="muted small">Valores menores indicam menor risco cardiovascular.</p>
+        </section>
+      </div>
+
+      <section class="card">
+        <p class="eyebrow green">Por mês</p>
+        <h3>Variação mensal do peso</h3>
+        <div class="chart-box"><canvas id="graficoMensal"></canvas></div>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow green">Resumo mensal</p>
+        <h3>Tabela por mês</h3>
+        <div class="table-scroll">
+          <table class="data-table" id="tabelaMensal">
+            <thead>
+              <tr><th>Mês</th><th>Registros</th><th>Média</th><th>Mínimo</th><th>Máximo</th><th>Δ vs mês anterior</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="card">
         <p class="eyebrow green">Consistência</p>
-        <h3>Calendário visual</h3>
+        <h3>Últimos 35 dias</h3>
         <div id="calendarGrid" class="calendar"></div>
       </section>
     </section>
 
-    <section id="tab-perfil" class="tab-page">
+    <!-- ============ AJUSTES ============ -->
+    <section id="tab-ajustes" class="tab-page">
       <section class="card">
         <p class="eyebrow green">Perfil</p>
         <h3>Configurações do perfil atual</h3>
-
         <div class="form-grid">
           <div>
             <label for="nomePerfilInput">Nome</label>
@@ -202,15 +301,49 @@
           </div>
           <div>
             <label for="alturaInput">Altura (m)</label>
-            <input id="alturaInput" type="number" step="0.01" placeholder="1.75" />
+            <input id="alturaInput" type="number" inputmode="decimal" step="0.01" placeholder="1.75" />
           </div>
           <div>
             <label for="metaInput">Meta de peso (kg)</label>
-            <input id="metaInput" type="number" step="0.1" placeholder="80.0" />
+            <input id="metaInput" type="number" inputmode="decimal" step="0.1" placeholder="80.0" />
+          </div>
+        </div>
+        <button id="salvarPerfilBtn" class="primary-btn">Salvar perfil</button>
+        <div class="button-row top-gap">
+          <button id="novoPerfilBtn" class="secondary-btn">Adicionar perfil</button>
+          <button id="excluirPerfilBtn" class="secondary-btn danger">Excluir perfil atual</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow green">Sincronização</p>
+        <h3>iPhone + iPad</h3>
+        <p id="syncStatus" class="muted">Sincronização desativada.</p>
+
+        <div id="syncOff">
+          <p class="muted small">
+            Crie um código neste aparelho e digite-o no outro. Os dados ficam salvos na nuvem
+            e os dois aparelhos passam a mostrar os mesmos registros automaticamente.
+          </p>
+          <button id="criarCodigoBtn" class="primary-btn">Criar código de sincronização</button>
+          <div class="divider muted">ou conecte com um código existente</div>
+          <div class="connect-row">
+            <input id="codigoInput" type="text" placeholder="Cole o código aqui" autocapitalize="none" autocomplete="off" />
+            <button id="conectarBtn" class="secondary-btn">Conectar</button>
           </div>
         </div>
 
-        <button id="salvarPerfilBtn" class="primary-btn">Salvar perfil</button>
+        <div id="syncOn" hidden>
+          <label>Código deste grupo de aparelhos</label>
+          <div class="connect-row">
+            <input id="codigoAtual" type="text" readonly />
+            <button id="copiarCodigoBtn" class="secondary-btn">Copiar</button>
+          </div>
+          <div class="button-row top-gap">
+            <button id="sincronizarAgoraBtn" class="secondary-btn">Sincronizar agora</button>
+            <button id="desconectarBtn" class="secondary-btn danger">Desativar sincronização</button>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -222,7 +355,18 @@
             Importar backup
             <input id="importarInput" type="file" accept="application/json" hidden />
           </label>
+          <button id="exportarCsvBtn" class="secondary-btn">Exportar CSV</button>
         </div>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow green">Instalação</p>
+        <h3>Usar como aplicativo</h3>
+        <p class="muted small">
+          No iPhone ou iPad, abra este site no Safari, toque no botão de compartilhar
+          e escolha <strong>"Adicionar à Tela de Início"</strong>. O app funciona até sem internet
+          e sincroniza quando a conexão voltar.
+        </p>
       </section>
     </section>
   </main>
@@ -231,8 +375,10 @@
     <button class="nav-btn active" data-tab="inicio">Início</button>
     <button class="nav-btn" data-tab="registros">Registros</button>
     <button class="nav-btn" data-tab="graficos">Gráficos</button>
-    <button class="nav-btn" data-tab="perfil">Perfil</button>
+    <button class="nav-btn" data-tab="ajustes">Ajustes</button>
   </nav>
+
+  <div id="toast" class="toast" hidden></div>
 
   <script src="app.js"></script>
 </body>
