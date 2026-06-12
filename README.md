@@ -32,21 +32,29 @@ funcionar **sincronizado entre iPhone e iPad** (e qualquer outro navegador).
 
 ## Como sincronizar iPhone + iPad
 
-1. No primeiro aparelho, abra **Ajustes → Sincronização** e toque em
-   **"Criar código de sincronização"**.
-2. Toque em **"Copiar"** (com o mesmo ID Apple, o texto copiado aparece no
-   outro aparelho automaticamente pela Área de Transferência Universal).
-3. No segundo aparelho, cole o código no campo e toque em **"Conectar"**.
+A sincronização usa o **seu próprio GitHub** para guardar os dados — sem
+serviços de terceiros. Configuração única:
+
+1. Crie um token em
+   [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new):
+   - **Token name**: `corpo-em-progresso`
+   - **Expiration**: a maior validade disponível
+   - **Repository access**: *Only select repositories* → `corpo-em-progresso`
+   - **Permissions → Repository permissions → Contents**: *Read and write*
+2. Toque em *Generate token* e copie o código `github_pat_…`.
+3. No app, abra **Ajustes → Sincronização**, cole o token e toque em **Ativar**.
+4. Repita o passo 3 no outro aparelho com o mesmo token (com o mesmo ID Apple,
+   o texto copiado aparece no outro aparelho pela Área de Transferência Universal).
 
 A partir daí os dois aparelhos mostram os mesmos registros. A sincronização
 acontece sozinha ao abrir o app, ao voltar para ele e logo depois de cada
 alteração. Se estiver sem internet, as alterações ficam guardadas e sobem
 quando a conexão voltar.
 
-> Os dados ficam guardados em um cofre anônimo na nuvem (jsonblob.com ou,
-> se ele estiver indisponível, jsonstorage.net — o app escolhe sozinho),
-> identificado apenas pelo código — guarde o código e faça backups JSON de vez
-> em quando pelo botão **Exportar backup**.
+> Os dados ficam no arquivo `sync/dados.json` do branch `dados` do repositório.
+> Se o repositório for público, os dados também ficam públicos — para mantê-los
+> privados, crie um repositório **privado** (ex.: `corpo-dados`), selecione-o ao
+> gerar o token e informe-o no campo "Repositório" do app.
 
 ## Estrutura do projeto
 

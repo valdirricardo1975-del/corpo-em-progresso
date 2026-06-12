@@ -6,55 +6,21 @@
 const STORAGE_KEY = "corpo_em_progresso_v2";
 const STORAGE_KEY_V1 = "corpo_em_progresso_final_v1";
 
-/* Serviços de nuvem para sincronização. O código gerado identifica o
-   serviço: códigos "js2-…" usam o jsonstorage.net; os demais, o jsonblob. */
-const PROVEDORES = {
-  jsonblob: {
-    hosts: ["jsonblob.com"],
-    async criar(dados) {
-      const resp = await fetch("https://jsonblob.com/api/jsonBlob", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(dados)
-      });
-      if (!resp.ok) throw new Error("jsonblob HTTP " + resp.status);
-      // o id vem no cabeçalho Location; alguns navegadores só recebem o X-jsonblob
-      const loc = resp.headers.get("Location") || resp.headers.get("X-jsonblob");
-      const id = loc ? loc.split("/").filter(Boolean).pop() : null;
-      if (!id) throw new Error("jsonblob não devolveu o código");
-      return id;
-    },
-    url(codigo) { return "https://jsonblob.com/api/jsonBlob/" + codigo; }
-  },
-  jsonstorage: {
-    hosts: ["api.jsonstorage.net"],
-    async criar(dados) {
-      const resp = await fetch("https://api.jsonstorage.net/v1/json", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dados)
-      });
-      if (!resp.ok) throw new Error("jsonstorage HTTP " + resp.status);
-      const corpo = await resp.json();
-      const id = String(corpo.uri || corpo.url || "").split("?")[0].split("/").filter(Boolean).pop();
-      if (!id) throw new Error("jsonstorage não devolveu o código");
-      return "js2-" + id;
-    },
-    url(codigo) { return "https://api.jsonstorage.net/v1/json/" + codigo.slice(4); }
+/* A sincronização guarda os dados num arquivo do GitHub do usuário
+   (API api.github.com, que aceita requisições de navegador). */
+const GH_API = "https://api.github.com";
+const SYNC_ARQUIVO = "sync/dados.json";
+const SYNC_BRANCH = "dados"; // fora do main para não republicar o site a cada pesagem
+
+// quando hospedado no GitHub Pages, deduz "usuario/repositorio" do endereço
+function repoPadrao() {
+  const host = location.hostname;
+  if (host.endsWith(".github.io")) {
+    const dono = host.slice(0, -".github.io".length);
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    if (dono && seg) return dono + "/" + seg;
   }
-};
-
-function provedorDoCodigo(codigo) {
-  return codigo && codigo.startsWith("js2-") ? PROVEDORES.jsonstorage : PROVEDORES.jsonblob;
-}
-
-// aceita o código puro ou um endereço colado inteiro
-function normalizarCodigo(texto) {
-  const limpo = (texto || "").trim();
-  if (!limpo) return "";
-  const ultimo = limpo.split("/").filter(Boolean).pop();
-  if (limpo.includes("jsonstorage") && !ultimo.startsWith("js2-")) return "js2-" + ultimo;
-  return ultimo;
+  return "";
 }
 const CAMPOS_MEDIDAS = ["gordura", "cintura", "quadril", "braco", "coxa", "peito", "pescoco"];
 const ROTULOS = {
@@ -83,7 +49,7 @@ function estadoPadrao() {
     registros: { p1: [] },
     tombstones: {},          // { pid: { "YYYY-MM-DD": deletedAtMs } }
     perfisExcluidos: {},     // { pid: deletedAtMs }
-    sync: { blobId: null, lastSyncAt: null, pendente: false }
+    sync: { token: null, repo: null, lastSyncAt: null, pendente: false }
   };
 }
 
@@ -129,11 +95,13 @@ let state = carregarEstado();
 
 function salvarEstado(dadosMudaram = true) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (dadosMudaram && state.sync.blobId) {
+  if (dadosMudaram && syncLigada()) {
     state.sync.pendente = true;
     agendarSync();
   }
 }
+
+function syncLigada() { return !!(state.sync.token && state.sync.repo); }
 
 /* ===================== Utilidades ===================== */
 
@@ -362,11 +330,12 @@ function setSyncStatus(texto, classe) {
 }
 
 function atualizarSyncUI() {
-  const ligado = !!state.sync.blobId;
+  const ligado = syncLigada();
   $("syncOff").hidden = ligado;
   $("syncOn").hidden = !ligado;
   if (ligado) {
-    $("codigoAtual").value = state.sync.blobId;
+    $("repoAtual").value = state.sync.repo;
+    $("tokenAtual").value = state.sync.token;
     if (state.sync.lastSyncAt) {
       const h = new Date(state.sync.lastSyncAt);
       setSyncStatus("Sincronizado às " + h.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), "ok");
@@ -379,44 +348,108 @@ function atualizarSyncUI() {
   }
 }
 
+/* --------- acesso ao GitHub --------- */
+
+function ghHeaders() {
+  return {
+    "Authorization": "Bearer " + state.sync.token,
+    "Accept": "application/vnd.github+json"
+  };
+}
+
+function paraBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
+function deBase64(b64) { return decodeURIComponent(escape(atob(b64.replace(/\s/g, "")))); }
+
+async function ghErro(resp, contexto) {
+  let detalhe = "";
+  try { detalhe = (await resp.json()).message || ""; } catch (e) { /* sem corpo */ }
+  return new Error(contexto + " HTTP " + resp.status + (detalhe ? " (" + detalhe + ")" : ""));
+}
+
+// garante que o branch de dados existe (cria a partir do branch padrão)
+async function garantirBranch(repo) {
+  const ref = await fetch(GH_API + "/repos/" + repo + "/git/ref/heads/" + SYNC_BRANCH, { headers: ghHeaders(), cache: "no-store" });
+  if (ref.ok) return;
+  if (ref.status !== 404) throw await ghErro(ref, "branch");
+  const infoResp = await fetch(GH_API + "/repos/" + repo, { headers: ghHeaders(), cache: "no-store" });
+  if (!infoResp.ok) throw await ghErro(infoResp, "repositório");
+  const info = await infoResp.json();
+  const base = await fetch(GH_API + "/repos/" + repo + "/git/ref/heads/" + info.default_branch, { headers: ghHeaders(), cache: "no-store" });
+  if (!base.ok) throw await ghErro(base, "branch padrão");
+  const sha = (await base.json()).object.sha;
+  const novo = await fetch(GH_API + "/repos/" + repo + "/git/refs", {
+    method: "POST",
+    headers: { ...ghHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ ref: "refs/heads/" + SYNC_BRANCH, sha })
+  });
+  // 422 = outro aparelho criou o branch ao mesmo tempo
+  if (!novo.ok && novo.status !== 422) throw await ghErro(novo, "criar branch");
+}
+
+// lê o arquivo de dados; devolve { dados, sha } ou null se ainda não existe
+async function lerNuvem(repo) {
+  const resp = await fetch(GH_API + "/repos/" + repo + "/contents/" + SYNC_ARQUIVO + "?ref=" + SYNC_BRANCH + "&t=" + agora(), {
+    headers: ghHeaders(), cache: "no-store"
+  });
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw await ghErro(resp, "leitura");
+  const corpo = await resp.json();
+  return { dados: JSON.parse(deBase64(corpo.content)), sha: corpo.sha };
+}
+
+class ConflitoSha extends Error {}
+
+async function escreverNuvem(repo, dados, sha) {
+  const resp = await fetch(GH_API + "/repos/" + repo + "/contents/" + SYNC_ARQUIVO, {
+    method: "PUT",
+    headers: { ...ghHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "Sincronização automática",
+      content: paraBase64(JSON.stringify(dados)),
+      branch: SYNC_BRANCH,
+      ...(sha ? { sha } : {})
+    })
+  });
+  // 409/422 = outro aparelho gravou primeiro; o chamador relê e tenta de novo
+  if (resp.status === 409 || resp.status === 422) throw new ConflitoSha("conflito");
+  if (!resp.ok) throw await ghErro(resp, "gravação");
+}
+
+/* --------- ciclo de sincronização --------- */
+
 async function sincronizar(interativo = false) {
-  if (!state.sync.blobId || syncEmAndamento) return;
+  if (!syncLigada() || syncEmAndamento) return;
   if (!navigator.onLine) { setSyncStatus("Sem internet — sincroniza quando voltar", "warn"); return; }
   syncEmAndamento = true;
   try {
-    const prov = provedorDoCodigo(state.sync.blobId);
-    const resp = await fetch(prov.url(state.sync.blobId), {
-      headers: { "Accept": "application/json" }, cache: "no-store"
-    });
-    if (resp.status === 404) {
-      setSyncStatus("Código expirou na nuvem — crie um novo em Ajustes", "err");
-      return;
-    }
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const remoto = await resp.json();
-    const local = dadosParaNuvem();
-    const mesclado = mesclar(local, remoto);
-
-    const localStr = JSON.stringify({ p: local.perfis, r: local.registros, t: local.tombstones, e: local.perfisExcluidos });
-    const mescStr = JSON.stringify({ p: mesclado.perfis, r: mesclado.registros, t: mesclado.tombstones, e: mesclado.perfisExcluidos });
-    const remotoStr = JSON.stringify({ p: remoto.perfis || [], r: remoto.registros || {}, t: remoto.tombstones || {}, e: remoto.perfisExcluidos || {} });
-
+    const repo = state.sync.repo;
     let mudouLocal = false;
-    if (mescStr !== localStr) {
-      state.perfis = mesclado.perfis.length ? mesclado.perfis : estadoPadrao().perfis;
-      state.registros = mesclado.registros;
-      state.tombstones = mesclado.tombstones;
-      state.perfisExcluidos = mesclado.perfisExcluidos;
-      if (!state.perfis.find(p => p.id === state.perfilAtualId)) state.perfilAtualId = state.perfis[0].id;
-      mudouLocal = true;
-    }
-    if (mescStr !== remotoStr) {
-      const put = await fetch(prov.url(state.sync.blobId), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ ...mesclado, version: 2, pushedAt: agora() })
-      });
-      if (!put.ok) throw new Error("HTTP " + put.status);
+    for (let tentativa = 0; ; tentativa++) {
+      const nuvem = await lerNuvem(repo);
+      const remoto = nuvem ? nuvem.dados : { perfis: [], registros: {}, tombstones: {}, perfisExcluidos: {} };
+      const local = dadosParaNuvem();
+      const mesclado = mesclar(local, remoto);
+
+      const localStr = JSON.stringify({ p: local.perfis, r: local.registros, t: local.tombstones, e: local.perfisExcluidos });
+      const mescStr = JSON.stringify({ p: mesclado.perfis, r: mesclado.registros, t: mesclado.tombstones, e: mesclado.perfisExcluidos });
+      const remotoStr = JSON.stringify({ p: remoto.perfis || [], r: remoto.registros || {}, t: remoto.tombstones || {}, e: remoto.perfisExcluidos || {} });
+
+      if (mescStr !== localStr) {
+        state.perfis = mesclado.perfis.length ? mesclado.perfis : estadoPadrao().perfis;
+        state.registros = mesclado.registros;
+        state.tombstones = mesclado.tombstones;
+        state.perfisExcluidos = mesclado.perfisExcluidos;
+        if (!state.perfis.find(p => p.id === state.perfilAtualId)) state.perfilAtualId = state.perfis[0].id;
+        mudouLocal = true;
+      }
+      if (mescStr === remotoStr) break;
+      try {
+        await escreverNuvem(repo, { ...mesclado, version: 2, pushedAt: agora() }, nuvem ? nuvem.sha : null);
+        break;
+      } catch (e) {
+        if (!(e instanceof ConflitoSha) || tentativa >= 3) throw e;
+        // outro aparelho gravou no meio do caminho: relê e mescla de novo
+      }
     }
     state.sync.pendente = false;
     state.sync.lastSyncAt = agora();
@@ -426,73 +459,56 @@ async function sincronizar(interativo = false) {
     if (interativo) toast("Sincronizado com sucesso.");
   } catch (e) {
     setSyncStatus("Falha ao sincronizar — tentaremos de novo", "err");
-    if (interativo) toast("Não foi possível sincronizar agora.");
+    if (interativo) toast("Não foi possível sincronizar (" + (e.message || "erro de rede") + ").");
   } finally {
     syncEmAndamento = false;
   }
 }
 
-async function criarCodigo() {
-  const btn = $("criarCodigoBtn");
-  btn.disabled = true;
-  btn.textContent = "Criando…";
-  const dados = dadosParaNuvem();
-  const falhas = [];
-  try {
-    let codigo = null;
-    // tenta cada serviço de nuvem até um funcionar
-    for (const prov of [PROVEDORES.jsonblob, PROVEDORES.jsonstorage]) {
-      try {
-        codigo = await prov.criar(dados);
-        break;
-      } catch (e) {
-        falhas.push(e.message || String(e));
-      }
-    }
-    if (!codigo) throw new Error(falhas.join(" / "));
-    state.sync.blobId = codigo;
-    state.sync.lastSyncAt = agora();
-    state.sync.pendente = false;
-    salvarEstado(false);
-    atualizarSyncUI();
-    toast("Código criado. Digite-o no outro aparelho.");
-  } catch (e) {
-    toast("Não foi possível criar o código (" + (e.message || "erro de rede") + "). Verifique a internet e tente de novo.");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Criar código de sincronização";
-  }
-}
-
-async function conectarCodigo() {
-  const codigo = normalizarCodigo($("codigoInput").value);
-  if (!codigo) { toast("Cole o código gerado no outro aparelho."); return; }
+async function conectarGitHub() {
+  const token = $("tokenInput").value.trim();
+  const repo = ($("repoInput").value.trim() || repoPadrao()).replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
+  if (!token) { toast("Cole o token gerado no GitHub."); return; }
+  if (!repo || !repo.includes("/")) { toast("Informe o repositório no formato usuario/repositorio."); return; }
   const btn = $("conectarBtn");
   btn.disabled = true;
+  btn.textContent = "Conectando…";
+  const syncAnterior = { ...state.sync };
   try {
-    const resp = await fetch(provedorDoCodigo(codigo).url(codigo), { headers: { "Accept": "application/json" }, cache: "no-store" });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    state.sync.token = token;
+    state.sync.repo = repo;
+    const resp = await fetch(GH_API + "/repos/" + repo, { headers: ghHeaders(), cache: "no-store" });
+    if (resp.status === 401) throw new Error("token inválido ou expirado");
+    if (resp.status === 404) throw new Error("repositório não encontrado — confira o nome e se o token dá acesso a ele");
+    if (!resp.ok) throw await ghErro(resp, "validação");
+    const info = await resp.json();
+    if (info.permissions && !info.permissions.push) throw new Error("o token não tem permissão de escrita (Contents: Read and write)");
+    await garantirBranch(repo);
     // quem entra num grupo existente não deve sobrepor os perfis já
     // configurados na nuvem com perfis locais nunca usados
     state.perfis.forEach(p => {
       if (!(state.registros[p.id] || []).length) p.updatedAt = 0;
     });
-    state.sync.blobId = codigo;
     state.sync.pendente = true;
     salvarEstado(false);
     await sincronizar(true);
     atualizarSyncUI();
-    $("codigoInput").value = "";
+    $("tokenInput").value = "";
+    $("repoInput").value = "";
   } catch (e) {
-    toast("Código não encontrado. Confira se digitou igual ao outro aparelho.");
+    state.sync = syncAnterior;
+    salvarEstado(false);
+    atualizarSyncUI();
+    toast("Não foi possível ativar: " + (e.message || "erro de rede") + ".");
   } finally {
     btn.disabled = false;
+    btn.textContent = "Ativar";
   }
 }
 
 function desconectarSync() {
   if (!confirm("Desativar a sincronização neste aparelho? Os dados locais são mantidos.")) return;
-  state.sync = { blobId: null, lastSyncAt: null, pendente: false };
+  state.sync = { token: null, repo: null, lastSyncAt: null, pendente: false };
   salvarEstado(false);
   atualizarSyncUI();
 }
@@ -1170,17 +1186,17 @@ document.querySelectorAll("#periodoBtns button").forEach(btn => btn.addEventList
   renderGraficoPeso();
 }));
 
-$("criarCodigoBtn").addEventListener("click", criarCodigo);
-$("conectarBtn").addEventListener("click", conectarCodigo);
+$("conectarBtn").addEventListener("click", conectarGitHub);
 $("desconectarBtn").addEventListener("click", desconectarSync);
 $("sincronizarAgoraBtn").addEventListener("click", () => sincronizar(true));
 $("copiarCodigoBtn").addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText(state.sync.blobId || "");
-    toast("Código copiado.");
+    await navigator.clipboard.writeText(state.sync.token || "");
+    toast("Token copiado. Cole no outro aparelho.");
   } catch (e) {
-    $("codigoAtual").select();
-    toast("Selecione e copie o código.");
+    $("tokenAtual").type = "text";
+    $("tokenAtual").select();
+    toast("Selecione e copie o token.");
   }
 });
 
@@ -1197,5 +1213,6 @@ if ("serviceWorker" in navigator) {
 }
 
 $("dataInput").value = hojeISO();
+if (repoPadrao()) $("repoInput").placeholder = "Repositório (já detectado: " + repoPadrao() + ")";
 renderTudo();
 sincronizar();
