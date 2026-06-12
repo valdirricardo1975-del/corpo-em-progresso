@@ -5,7 +5,57 @@
 
 const STORAGE_KEY = "corpo_em_progresso_v2";
 const STORAGE_KEY_V1 = "corpo_em_progresso_final_v1";
-const SYNC_API = "https://jsonblob.com/api/jsonBlob";
+
+/* Serviços de nuvem para sincronização. O código gerado identifica o
+   serviço: códigos "js2-…" usam o jsonstorage.net; os demais, o jsonblob. */
+const PROVEDORES = {
+  jsonblob: {
+    hosts: ["jsonblob.com"],
+    async criar(dados) {
+      const resp = await fetch("https://jsonblob.com/api/jsonBlob", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(dados)
+      });
+      if (!resp.ok) throw new Error("jsonblob HTTP " + resp.status);
+      // o id vem no cabeçalho Location; alguns navegadores só recebem o X-jsonblob
+      const loc = resp.headers.get("Location") || resp.headers.get("X-jsonblob");
+      const id = loc ? loc.split("/").filter(Boolean).pop() : null;
+      if (!id) throw new Error("jsonblob não devolveu o código");
+      return id;
+    },
+    url(codigo) { return "https://jsonblob.com/api/jsonBlob/" + codigo; }
+  },
+  jsonstorage: {
+    hosts: ["api.jsonstorage.net"],
+    async criar(dados) {
+      const resp = await fetch("https://api.jsonstorage.net/v1/json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados)
+      });
+      if (!resp.ok) throw new Error("jsonstorage HTTP " + resp.status);
+      const corpo = await resp.json();
+      const id = String(corpo.uri || corpo.url || "").split("?")[0].split("/").filter(Boolean).pop();
+      if (!id) throw new Error("jsonstorage não devolveu o código");
+      return "js2-" + id;
+    },
+    url(codigo) { return "https://api.jsonstorage.net/v1/json/" + codigo.slice(4); }
+  }
+};
+
+function provedorDoCodigo(codigo) {
+  return codigo && codigo.startsWith("js2-") ? PROVEDORES.jsonstorage : PROVEDORES.jsonblob;
+}
+
+// aceita o código puro ou um endereço colado inteiro
+function normalizarCodigo(texto) {
+  const limpo = (texto || "").trim();
+  if (!limpo) return "";
+  const ultimo = limpo.split("/").filter(Boolean).pop();
+  if (limpo.includes("jsonstorage") && !ultimo.startsWith("js2-")) return "js2-" + ultimo;
+  return ultimo;
+}
 const CAMPOS_MEDIDAS = ["gordura", "cintura", "quadril", "braco", "coxa", "peito", "pescoco"];
 const ROTULOS = {
   gordura: "Gordura corporal (%)",
@@ -334,7 +384,8 @@ async function sincronizar(interativo = false) {
   if (!navigator.onLine) { setSyncStatus("Sem internet — sincroniza quando voltar", "warn"); return; }
   syncEmAndamento = true;
   try {
-    const resp = await fetch(SYNC_API + "/" + state.sync.blobId, {
+    const prov = provedorDoCodigo(state.sync.blobId);
+    const resp = await fetch(prov.url(state.sync.blobId), {
       headers: { "Accept": "application/json" }, cache: "no-store"
     });
     if (resp.status === 404) {
@@ -360,7 +411,7 @@ async function sincronizar(interativo = false) {
       mudouLocal = true;
     }
     if (mescStr !== remotoStr) {
-      const put = await fetch(SYNC_API + "/" + state.sync.blobId, {
+      const put = await fetch(prov.url(state.sync.blobId), {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ ...mesclado, version: 2, pushedAt: agora() })
@@ -385,24 +436,28 @@ async function criarCodigo() {
   const btn = $("criarCodigoBtn");
   btn.disabled = true;
   btn.textContent = "Criando…";
+  const dados = dadosParaNuvem();
+  const falhas = [];
   try {
-    const resp = await fetch(SYNC_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(dadosParaNuvem())
-    });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const loc = resp.headers.get("Location") || resp.headers.get("location");
-    if (!loc) throw new Error("sem Location");
-    const id = loc.split("/").filter(Boolean).pop();
-    state.sync.blobId = id;
+    let codigo = null;
+    // tenta cada serviço de nuvem até um funcionar
+    for (const prov of [PROVEDORES.jsonblob, PROVEDORES.jsonstorage]) {
+      try {
+        codigo = await prov.criar(dados);
+        break;
+      } catch (e) {
+        falhas.push(e.message || String(e));
+      }
+    }
+    if (!codigo) throw new Error(falhas.join(" / "));
+    state.sync.blobId = codigo;
     state.sync.lastSyncAt = agora();
     state.sync.pendente = false;
     salvarEstado(false);
     atualizarSyncUI();
     toast("Código criado. Digite-o no outro aparelho.");
   } catch (e) {
-    toast("Não foi possível criar o código. Verifique a internet e tente de novo.");
+    toast("Não foi possível criar o código (" + (e.message || "erro de rede") + "). Verifique a internet e tente de novo.");
   } finally {
     btn.disabled = false;
     btn.textContent = "Criar código de sincronização";
@@ -410,13 +465,18 @@ async function criarCodigo() {
 }
 
 async function conectarCodigo() {
-  const codigo = $("codigoInput").value.trim().split("/").filter(Boolean).pop();
+  const codigo = normalizarCodigo($("codigoInput").value);
   if (!codigo) { toast("Cole o código gerado no outro aparelho."); return; }
   const btn = $("conectarBtn");
   btn.disabled = true;
   try {
-    const resp = await fetch(SYNC_API + "/" + codigo, { headers: { "Accept": "application/json" }, cache: "no-store" });
+    const resp = await fetch(provedorDoCodigo(codigo).url(codigo), { headers: { "Accept": "application/json" }, cache: "no-store" });
     if (!resp.ok) throw new Error("HTTP " + resp.status);
+    // quem entra num grupo existente não deve sobrepor os perfis já
+    // configurados na nuvem com perfis locais nunca usados
+    state.perfis.forEach(p => {
+      if (!(state.registros[p.id] || []).length) p.updatedAt = 0;
+    });
     state.sync.blobId = codigo;
     state.sync.pendente = true;
     salvarEstado(false);
