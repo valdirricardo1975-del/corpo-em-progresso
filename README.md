@@ -43,7 +43,8 @@ acontece sozinha ao abrir o app, ao voltar para ele e logo depois de cada
 alteração. Se estiver sem internet, as alterações ficam guardadas e sobem
 quando a conexão voltar.
 
-> Os dados ficam guardados em um cofre anônimo na nuvem (jsonblob.com),
+> Os dados ficam guardados em um cofre anônimo na nuvem (jsonblob.com ou,
+> se ele estiver indisponível, jsonstorage.net — o app escolhe sozinho),
 > identificado apenas pelo código — guarde o código e faça backups JSON de vez
 > em quando pelo botão **Exportar backup**.
 
