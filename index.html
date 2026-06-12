@@ -322,21 +322,38 @@
 
         <div id="syncOff">
           <p class="muted small">
-            Crie um código neste aparelho e digite-o no outro. Os dados ficam salvos na nuvem
-            e os dois aparelhos passam a mostrar os mesmos registros automaticamente.
+            A sincronização usa o seu próprio GitHub para guardar os dados.
+            Você só precisa criar um <strong>token</strong> uma vez e colá-lo nos dois aparelhos:
           </p>
-          <button id="criarCodigoBtn" class="primary-btn">Criar código de sincronização</button>
-          <div class="divider muted">ou conecte com um código existente</div>
+          <ol class="muted small steps">
+            <li>Toque em <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener"><strong>github.com/settings/personal-access-tokens/new</strong></a> (entre na sua conta se pedir);</li>
+            <li>Em <em>Token name</em>, escreva <strong>corpo-em-progresso</strong>;</li>
+            <li>Em <em>Expiration</em>, escolha a maior validade disponível;</li>
+            <li>Em <em>Repository access</em>, marque <em>Only select repositories</em> e escolha <strong>corpo-em-progresso</strong>;</li>
+            <li>Em <em>Permissions → Repository permissions</em>, ache <strong>Contents</strong> e mude para <strong>Read and write</strong>;</li>
+            <li>Toque em <em>Generate token</em> e copie o código que começa com <code>github_pat_</code>;</li>
+            <li>Cole o código no campo abaixo, aqui e no outro aparelho.</li>
+          </ol>
           <div class="connect-row">
-            <input id="codigoInput" type="text" placeholder="Cole o código aqui" autocapitalize="none" autocomplete="off" />
-            <button id="conectarBtn" class="secondary-btn">Conectar</button>
+            <input id="tokenInput" type="password" placeholder="Cole o token aqui (github_pat_…)" autocapitalize="none" autocomplete="off" />
           </div>
+          <div class="connect-row top-gap">
+            <input id="repoInput" type="text" placeholder="Repositório (opcional, ex.: usuario/corpo-dados)" autocapitalize="none" autocomplete="off" />
+            <button id="conectarBtn" class="secondary-btn">Ativar</button>
+          </div>
+          <p class="muted small top-gap">
+            Os dados ficam num arquivo do repositório. Se o repositório for público, os dados
+            também ficam públicos — para mantê-los privados, crie um repositório <strong>privado</strong>
+            no GitHub (ex.: <code>corpo-dados</code>), selecione-o no passo 4 e informe-o no campo acima.
+          </p>
         </div>
 
         <div id="syncOn" hidden>
-          <label>Código deste grupo de aparelhos</label>
+          <label>Repositório em uso</label>
+          <input id="repoAtual" type="text" readonly />
+          <label class="top-gap">Token (cole no outro aparelho)</label>
           <div class="connect-row">
-            <input id="codigoAtual" type="text" readonly />
+            <input id="tokenAtual" type="password" readonly />
             <button id="copiarCodigoBtn" class="secondary-btn">Copiar</button>
           </div>
           <div class="button-row top-gap">

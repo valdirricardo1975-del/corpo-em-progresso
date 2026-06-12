@@ -1,4 +1,4 @@
-const CACHE_NAME = "corpo-em-progresso-v4";
+const CACHE_NAME = "corpo-em-progresso-v5";
 const ASSETS = [
   "./",
   "./index.html",
@@ -26,8 +26,8 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
-  // nunca intercepta as APIs de sincronização
-  if (url.hostname === "jsonblob.com" || url.hostname === "api.jsonstorage.net") return;
+  // nunca intercepta a API de sincronização
+  if (url.hostname === "api.github.com") return;
   if (e.request.method !== "GET") return;
 
   // CDN (Chart.js, fontes): cache-first com preenchimento em segundo plano
