@@ -1,1 +1,1 @@
-{"perfis":[{"id":"p1","nome":"Você","altura":1.75,"metaPeso":80,"updatedAt":0}],"registros":{"p1":[]},"tombstones":{},"perfisExcluidos":{},"version":2,"pushedAt":1781308872343}
+{"perfis":[{"id":"p1","nome":"Você","altura":1.75,"metaPeso":80,"updatedAt":0}],"registros":{"p1":[{"data":"2026-06-16","peso":84.5,"obs":"Jejum","updatedAt":1781613243059,"gordura":null,"cintura":96,"quadril":null,"braco":null,"coxa":101,"peito":null,"pescoco":null}]},"tombstones":{},"perfisExcluidos":{},"version":2,"pushedAt":1781613244877}
